@@ -1,0 +1,75 @@
+# Количество реплик
+replicaCount: 3
+
+# Образ приложения
+image:
+  repository: nginx
+  tag: "1.21"
+  pullPolicy: IfNotPresent
+
+# Конфигурация приложения (ConfigMap)
+config:
+  app_name: "myapp"
+  environment: "production"
+  log_level: "info"
+
+# Секреты (Secret)
+secret:
+  database_password: "changeme"
+  api_key: "secret-api-key"
+
+# Service конфигурация
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+# Ingress конфигурация
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: myapp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Resource limits и requests
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# Labels и annotations
+labels: {}
+annotations: {}
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
