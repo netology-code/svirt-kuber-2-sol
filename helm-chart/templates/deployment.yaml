@@ -51,6 +51,10 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/config
+            {{- if .Values.hostPath.enabled }}
+            - name: host-data
+              mountPath: {{ .Values.hostPath.mountPath }}
+            {{- end }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -61,4 +65,10 @@ spec:
         - name: config
           configMap:
             name: {{ include "myapp.fullname" . }}-config
+        {{- if .Values.hostPath.enabled }}
+        - name: host-data
+          hostPath:
+            path: {{ .Values.hostPath.path }}
+            type: {{ .Values.hostPath.type }}
+        {{- end }}
 

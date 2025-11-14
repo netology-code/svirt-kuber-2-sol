@@ -73,3 +73,10 @@ tolerations: []
 # Affinity
 affinity: {}
 
+# HostPath volume конфигурация
+hostPath:
+  enabled: false
+  path: /tmp/myapp-data
+  mountPath: /mnt/host-data
+  type: DirectoryOrCreate
+

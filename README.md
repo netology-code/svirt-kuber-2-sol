@@ -270,6 +270,93 @@ helm rollback myapp 1
 helm uninstall myapp
 ```
 
+### HostPath Volume 
+
+**1. Обновление values.yaml для включения hostPath:**
+```yaml
+hostPath:
+  enabled: true
+  path: /tmp/myapp-data
+  mountPath: /mnt/host-data
+  type: DirectoryOrCreate
+```
+
+**2. Установка/обновление чарта:**
+```bash
+# Обновление с включенным hostPath
+helm upgrade myapp ./helm-chart --set hostPath.enabled=true \
+  --set hostPath.path=/tmp/myapp-data \
+  --set hostPath.mountPath=/mnt/host-data
+
+# Или через values.yaml
+helm upgrade myapp ./helm-chart -f values-with-hostpath.yaml
+```
+
+**3. Проверка установки:**
+```bash
+# Проверка подов
+kubectl get pods -l app.kubernetes.io/instance=myapp
+
+# Проверка volume в поде
+kubectl describe pod <pod-name> | grep -A 10 "Mounts:"
+```
+
+**4. Подключение к поду и создание файла:**
+```bash
+# Получить имя пода
+POD_NAME=$(kubectl get pods -l app.kubernetes.io/instance=myapp -o jsonpath='{.items[0].metadata.name}')
+
+# Подключиться к поду
+kubectl exec -it $POD_NAME -- /bin/sh
+
+# Внутри пода создать файл
+echo "Hello from pod" > /mnt/host-data/test-file.txt
+cat /mnt/host-data/test-file.txt
+
+# Выйти из пода
+exit
+```
+
+**5. Проверка файла на узле хоста:**
+```bash
+# Найти узел, где запущен под
+NODE_NAME=$(kubectl get pod $POD_NAME -o jsonpath='{.spec.nodeName}')
+echo "Pod is running on node: $NODE_NAME"
+
+# Подключиться к узлу (или проверить локально, если под на master)
+# На узле выполнить:
+ls -la /tmp/myapp-data/
+cat /tmp/myapp-data/test-file.txt
+
+# Должен быть файл test-file.txt с содержимым "Hello from pod"
+```
+
+**6. Проверка, что файл действительно на хосте:**
+```bash
+# Создать файл на хосте напрямую
+echo "Hello from host" > /tmp/myapp-data/host-file.txt
+
+# Проверить из пода
+kubectl exec $POD_NAME -- cat /mnt/host-data/host-file.txt
+
+# Должно вывести: Hello from host
+```
+
+**7. Удаление файлов и очистка:**
+```bash
+# Удалить файлы через под
+kubectl exec $POD_NAME -- rm /mnt/host-data/test-file.txt /mnt/host-data/host-file.txt
+
+# Или напрямую на хосте
+rm /tmp/myapp-data/*.txt
+```
+
+**Важные замечания:**
+- hostPath монтирует директорию узла в контейнер
+- Файлы, созданные в контейнере, видны на хосте
+- Файлы, созданные на хосте, видны в контейнере
+- ⚠️ **Безопасность:** hostPath может быть опасен в production, так как дает доступ к файловой системе узла
+- ⚠️ **Переносимость:** Поды с hostPath привязаны к конкретному узлу
 ---
 
 ## Задание 3: Документация
